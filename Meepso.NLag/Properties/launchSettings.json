@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "GDWeave.Sample": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "GDWeavePath": "D:\\SteamLibrary\\steamapps\\common\\WEBFISHING\\GDWeave"
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblySearchPaths>$(AssemblySearchPaths);$(GDWeavePath)/core</AssemblySearchPaths>
+        <Version>1.0.0.0</Version>
+    </PropertyGroup>
+    <ItemGroup>
+      <None Remove="h5hww1rc.awz~" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="GDWeave">
+        </Reference>
+        <Reference Include="Serilog">
+        </Reference>
+    </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(GDWeavePath)' != ''">
+        <ItemGroup>
+            <_SourceFiles Include="$(OutDir)\**\*.*" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(_SourceFiles)" DestinationFolder="$(GDWeavePath)/mods/$(AssemblyName)" />
+    </Target>
+</Project>
