@@ -2,5 +2,5 @@
 namespace Meepso.NLag;
 
 public class Config {
-    [JsonInclude] public bool SomeSetting = true;
+    //[JsonInclude] public bool SomeSetting = true;
 }
