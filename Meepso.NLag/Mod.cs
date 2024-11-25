@@ -9,6 +9,7 @@ public class Mod : IMod {
         this.Config = modInterface.ReadConfig<Config>();
         modInterface.Logger.Information("Loading");
 
+        // disabled for now
         modInterface.RegisterScriptMod(new SteamPatch(modInterface));
     }
 

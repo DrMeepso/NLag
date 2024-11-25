@@ -1,0 +1,7 @@
+{
+  "name": "NLag",
+  "version_number": "1.0.3",
+  "website_url": "https://github.com/DrMeepso/NLag",
+  "description": "Make the fish multi threaded",
+  "dependencies": ["NotNet-GDWeave-2.0.14"]
+}

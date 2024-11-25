@@ -2,12 +2,15 @@
 using GDWeave.Godot;
 using GDWeave.Modding;
 using GDWeave.Godot.Variants;
+using System;
 
 
 namespace Meepso.NLag;
 
 public class SteamPatch : IScriptMod
 {
+
+    public uint threadLifetime = 10000;
 
     public IModInterface modInterface;
     public SteamPatch(IModInterface modInterface)
@@ -119,6 +122,17 @@ public class SteamPatch : IScriptMod
                 yield return new Token(TokenType.ParenthesisClose);
                 yield return new Token(TokenType.Newline, 1);
 
+                // create the mutex
+                // steamThreadMutex = Mutex.new()
+                yield return new IdentifierToken("steamThreadMutex");
+                yield return new Token(TokenType.OpAssign);
+                yield return new IdentifierToken("Mutex");
+                yield return new Token(TokenType.Period);
+                yield return new IdentifierToken("new");
+                yield return new Token(TokenType.ParenthesisOpen);
+                yield return new Token(TokenType.ParenthesisClose);
+                yield return new Token(TokenType.Newline, 1);
+
                 // steamPacketThread.start(self, "_steam_packet_thread", null)
                 yield return new IdentifierToken("steamPacketThread");
                 yield return new Token(TokenType.Period);
@@ -139,6 +153,11 @@ public class SteamPatch : IScriptMod
     if not STEAM_ENABLED: return 
 	Steam.run_callbacks()
 	_run_all_buffered_packets()
+
+    if not steamPacketThread.is_alive():
+        steamPacketThread.wait_to_finish()
+        steamPacketThread = Thread.new()
+        steamPacketThread.start(self, "_steam_packet_thread", null)
                 */
 
                 yield return new Token(TokenType.Newline, 1); // just make sure
@@ -162,6 +181,49 @@ public class SteamPatch : IScriptMod
                 // _run_all_buffered_packets()
                 yield return new IdentifierToken("_run_all_buffered_packets");
                 yield return new Token(TokenType.ParenthesisOpen);
+                yield return new Token(TokenType.ParenthesisClose);
+                yield return new Token(TokenType.Newline, 1);
+
+                // if not steamPacketThread.is_alive():
+                yield return new Token(TokenType.CfIf);
+                yield return new Token(TokenType.OpNot);
+                yield return new IdentifierToken("steamPacketThread");
+                yield return new Token(TokenType.Period);
+                yield return new IdentifierToken("is_alive");
+                yield return new Token(TokenType.ParenthesisOpen);
+                yield return new Token(TokenType.ParenthesisClose);
+                yield return new Token(TokenType.Colon);
+
+                yield return new Token(TokenType.Newline, 2); // inside the if
+
+                // steamPacketThread.wait_to_finish()
+                yield return new IdentifierToken("steamPacketThread");
+                yield return new Token(TokenType.Period);
+                yield return new IdentifierToken("wait_to_finish");
+                yield return new Token(TokenType.ParenthesisOpen);
+                yield return new Token(TokenType.ParenthesisClose);
+                yield return new Token(TokenType.Newline, 2);
+
+                // steamPacketThread = Thread.new()
+                yield return new IdentifierToken("steamPacketThread");
+                yield return new Token(TokenType.OpAssign);
+                yield return new IdentifierToken("Thread");
+                yield return new Token(TokenType.Period);
+                yield return new IdentifierToken("new");
+                yield return new Token(TokenType.ParenthesisOpen);
+                yield return new Token(TokenType.ParenthesisClose);
+                yield return new Token(TokenType.Newline, 2);
+
+                // steamPacketThread.start(self, "_steam_packet_thread", null)
+                yield return new IdentifierToken("steamPacketThread");
+                yield return new Token(TokenType.Period);
+                yield return new IdentifierToken("start");
+                yield return new Token(TokenType.ParenthesisOpen);
+                yield return new Token(TokenType.Self);
+                yield return new Token(TokenType.Comma);
+                yield return new ConstantToken(new StringVariant("_steam_packet_thread"));
+                yield return new Token(TokenType.Comma);
+                yield return new ConstantToken(new NilVariant());
                 yield return new Token(TokenType.ParenthesisClose);
                 yield return new Token(TokenType.Newline, 1);
 
@@ -290,21 +352,32 @@ public class SteamPatch : IScriptMod
         yield return new Token(TokenType.PrVar);
         yield return new IdentifierToken("steamPacketThread");
 
+        yield return new Token(TokenType.Newline);
+
+        // var steamThreadMutex
+        yield return new Token(TokenType.Newline);
+        yield return new Token(TokenType.PrVar);
+        yield return new IdentifierToken("steamThreadMutex");
+
+        yield return new Token(TokenType.Newline);
+
         /*
 func _steam_packet_thread():
 	print("Steam thead online!")
 	
-	while steamThreadRunning:
+    var threadStart = Time.get_ticks_msec()
+
+	while steamThreadRunning and Time.get_ticks_msec() - threadStart < 10000:
 		if STEAM_LOBBY_ID <= 0: continue
 		
 		for channel in CHANNELS.size():
 			if not steamThreadRunning: break
 			_read_all_P2P_packets(channel)
-	OS.delay_msec(16)
+	    OS.delay_msec(16)
 */
 
-                // func _steam_packet_thread():
-                yield return new Token(TokenType.Newline);
+        // func _steam_packet_thread():
+        yield return new Token(TokenType.Newline);
         yield return new Token(TokenType.PrFunction);
         yield return new IdentifierToken("_steam_packet_thread");
         yield return new Token(TokenType.ParenthesisOpen);
@@ -317,9 +390,34 @@ func _steam_packet_thread():
         foreach (var printToken in CreatePrintFunction("Steam thead online!", 1))
             yield return printToken;
 
-        // while steamThreadRunning:
+        // var threadStart = Time.get_ticks_msec()
+        yield return new Token(TokenType.PrVar);
+        yield return new IdentifierToken("threadStart");
+        yield return new Token(TokenType.OpAssign);
+        yield return new IdentifierToken("Time");
+        yield return new Token(TokenType.Period);
+        yield return new IdentifierToken("get_ticks_msec");
+        yield return new Token(TokenType.ParenthesisOpen);
+        yield return new Token(TokenType.ParenthesisClose);
+
+        yield return new Token(TokenType.Newline, 1);
+
+        // while steamThreadRunning and Time.get_ticks_msec() - threadStart < 10000:
         yield return new Token(TokenType.CfWhile);
         yield return new IdentifierToken("steamThreadRunning");
+
+        yield return new Token(TokenType.OpAnd);
+
+        yield return new IdentifierToken("Time");
+        yield return new Token(TokenType.Period);
+        yield return new IdentifierToken("get_ticks_msec");
+        yield return new Token(TokenType.ParenthesisOpen);
+        yield return new Token(TokenType.ParenthesisClose);
+        yield return new Token(TokenType.OpSub);
+        yield return new IdentifierToken("threadStart");
+        yield return new Token(TokenType.OpLess);
+        yield return new ConstantToken(new IntVariant(threadLifetime));
+
         yield return new Token(TokenType.Colon);
 
         yield return new Token(TokenType.Newline, 2); // we are inside the while loop
@@ -369,8 +467,14 @@ func _steam_packet_thread():
         yield return new Token(TokenType.Period);
         yield return new IdentifierToken("delay_msec");
         yield return new Token(TokenType.ParenthesisOpen);
-        yield return new ConstantToken(new IntVariant(16));
+        yield return new ConstantToken(new IntVariant(1000/120)); // 120 ticks per second
         yield return new Token(TokenType.ParenthesisClose);
+
+        // print a message to show the function is done
+        yield return new Token(TokenType.Newline, 1); // we are inside the function
+
+        foreach (var printToken in CreatePrintFunction("Steam thead offline!", 1))
+            yield return printToken;
 
         yield return new Token(TokenType.Newline, 0); // the function is done!
 
@@ -431,6 +535,16 @@ func _steam_packet_thread():
 
         yield return new Token(TokenType.Newline, 2); // we are inside the if
 
+        // steamThreadMutex.lock()
+        yield return new IdentifierToken("steamThreadMutex");
+        yield return new Token(TokenType.Period);
+        yield return new IdentifierToken("lock");
+        yield return new Token(TokenType.ParenthesisOpen);
+        yield return new Token(TokenType.ParenthesisClose);
+
+        yield return new Token(TokenType.Newline, 2); // we are inside the if
+
+
         // bufferedPackets.append(PACKET)
         yield return new IdentifierToken("bufferedPackets");
         yield return new Token(TokenType.Period);
@@ -439,15 +553,26 @@ func _steam_packet_thread():
         yield return new IdentifierToken("PACKET");
         yield return new Token(TokenType.ParenthesisClose);
 
+        yield return new Token(TokenType.Newline, 2); // we are inside the if
+
+        // steamThreadMutex.unlock()
+        yield return new IdentifierToken("steamThreadMutex");
+        yield return new Token(TokenType.Period);
+        yield return new IdentifierToken("unlock");
+        yield return new Token(TokenType.ParenthesisOpen);
+        yield return new Token(TokenType.ParenthesisClose);
+
         yield return new Token(TokenType.Newline, 0); // the function is done!
 
         /*
         func _run_all_buffered_packets():
             if len(bufferedPackets) > 0:
+                if steamThreadMutex.try_lock() != OK: return
                 for packet in bufferedPackets:
                     _read_P2P_Packet(packet)
 
                 bufferedPackets.clear()
+                steamThreadMutex.unlock()
         */
 
         // func _run_all_buffered_packets():
@@ -470,6 +595,20 @@ func _steam_packet_thread():
         yield return new Token(TokenType.OpGreater);
         yield return new ConstantToken(new IntVariant(0));
         yield return new Token(TokenType.Colon);
+
+        yield return new Token(TokenType.Newline, 2); // we are inside the if
+
+        // if steamThreadMutex.try_lock() != OK: return
+        yield return new Token(TokenType.CfIf);
+        yield return new IdentifierToken("steamThreadMutex");
+        yield return new Token(TokenType.Period);
+        yield return new IdentifierToken("try_lock");
+        yield return new Token(TokenType.ParenthesisOpen);
+        yield return new Token(TokenType.ParenthesisClose);
+        yield return new Token(TokenType.OpNotEqual);
+        yield return new IdentifierToken("OK");
+        yield return new Token(TokenType.Colon);
+        yield return new Token(TokenType.CfReturn);
 
         yield return new Token(TokenType.Newline, 2); // we are inside the if
 
@@ -496,6 +635,16 @@ func _steam_packet_thread():
         yield return new IdentifierToken("clear");
         yield return new Token(TokenType.ParenthesisOpen);
         yield return new Token(TokenType.ParenthesisClose);
+
+        // steamThreadMutex.unlock()
+        yield return new Token(TokenType.Newline, 2); // we are inside the if
+        yield return new IdentifierToken("steamThreadMutex");
+        yield return new Token(TokenType.Period);
+        yield return new IdentifierToken("unlock");
+        yield return new Token(TokenType.ParenthesisOpen);
+        yield return new Token(TokenType.ParenthesisClose);
+
+        yield return new Token(TokenType.Newline, 0);
 
         // end the function
         yield return new Token(TokenType.Newline, 0);

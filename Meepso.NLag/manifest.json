@@ -1,0 +1,16 @@
+{
+  "name": "NLag",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/DrMeepso/NLag",
+  "description": "Make the fish multithreaded",
+  "dependencies": [],
+
+  "Id": "Meepso.NLag",
+  "AssemblyPath": "Meepso.NLag.dll",
+  "Metadata": {
+    "Name": "NLag",
+    "Author": "Meepso",
+    "Version": "1.0.0",
+    "Description": "Make the fish multithreaded"
+  }
+}
